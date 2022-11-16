@@ -2,7 +2,7 @@
   "name": "minipacco",
   "repository": "github:fabiospampinato/minipacco",
   "description": "A little bundler for resolving dependencies graphs into a single concatenated file.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "bin": "dist/bin.js",
   "scripts": {
