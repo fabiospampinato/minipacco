@@ -132,9 +132,8 @@ const MiniPacco = {
   traverse: ( graph: Graph, callback: (( parent: Node | undefined, child: Node ) => void) ): void => {
 
     const traversed = new Set<string> ();
-    const traversing: string[] = [];
 
-    const traverse = ( parent: Node | undefined, child: Node ): void => {
+    const traverse = ( traversing: string[], parent: Node | undefined, child: Node ): void => {
 
       if ( traversing.includes ( child.filePath ) ) {
 
@@ -142,7 +141,7 @@ const MiniPacco = {
 
       }
 
-      traversing.push ( child.filePath );
+      traversing = [...traversing, child.filePath];
 
       if ( traversed.has ( child.filePath ) ) return;
 
@@ -152,7 +151,7 @@ const MiniPacco = {
 
       child.dependencies.forEach ( dependency => {
 
-        traverse ( child, graph.nodes[dependency] );
+        traverse ( traversing, child, graph.nodes[dependency] );
 
       });
 
@@ -166,9 +165,7 @@ const MiniPacco = {
 
     graph.roots.forEach ( root => {
 
-      traversing.length = 0;
-
-      traverse ( undefined, root );
+      traverse ( [], undefined, root );
 
     });
 
