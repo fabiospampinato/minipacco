@@ -3,6 +3,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
+import {color} from 'specialist';
 import type {Node, Graph} from './types';
 
 /* HELPERS */
@@ -11,53 +13,102 @@ const Helpers = {
 
   /* API */
 
-  getDependencies: ( rootPath: string, folderPath: string, fileContent: string ): string[] => {
+  checkCircularDependencies: ( graph: Graph ): void => {
+
+    Helpers.traverseGraphFromRoots ( graph, () => {} );
+
+  },
+
+  getFileContent: ( filePath: string ): string => {
+
+    try {
+
+      return fs.readFileSync ( filePath, 'utf8' );
+
+    } catch ( error: unknown ) {
+
+      const isFound = fs.existsSync ( filePath );
+
+      if ( isFound ) {
+
+        console.log ( color.red ( `Failed to read file: "${filePath}"` ) );
+        console.log ( error );
+
+      } else {
+
+        console.log ( color.red ( `File not found: "${filePath}"` ) );
+
+      }
+
+      process.exit ( 1 );
+
+    }
+
+  },
+
+  getFileDependencies: ( rootPath: string, folderPath: string, fileContent: string ): string[] => {
 
     const dependencyRe = /@require\s+([^\s;]+)/g;
     const dependenciesMatches = Array.from ( fileContent.matchAll ( dependencyRe ) );
-    const dependencies = dependenciesMatches.map ( match => match[1] );
-    const dependenciesAbsolute = dependencies.map ( dependency => dependency.startsWith ( '.' ) ? path.resolve ( folderPath, dependency ) : path.resolve ( rootPath, dependency ) );
+    const dependenciesIdentifiers = dependenciesMatches.map ( match => match[1] );
+    const dependenciesAbsolute = dependenciesIdentifiers.map ( dependency => dependency.startsWith ( '.' ) ? path.resolve ( folderPath, dependency ) : path.resolve ( rootPath, dependency ) );
 
     return dependenciesAbsolute;
 
   },
 
-  getRoots: ( nodes: Graph['nodes'] ): Node[] => {
+  getGraph: ( entryPath: string ): Graph => {
 
-    const filePaths = new Set ( Object.keys ( nodes ) );
+    const filePath = path.resolve ( entryPath );
+    const rootPath = path.dirname ( filePath );
+    const queue = [filePath];
+    const nodes: Graph['nodes'] = {};
+
+     while ( true ) {
+
+      const filePath = queue.shift ();
+
+      if ( !filePath ) break;
+
+      if ( nodes[filePath] ) continue;
+
+      const fileContent = Helpers.getFileContent ( filePath );
+      const folderPath = path.dirname ( filePath );
+      const dependants: string[] = [];
+      const dependencies = Helpers.getFileDependencies ( rootPath, folderPath, fileContent );
+      const node: Node = { filePath, fileContent, dependants, dependencies };
+
+      nodes[filePath] = node;
+      queue.unshift ( ...dependencies );
+
+    }
 
     Object.values ( nodes ).forEach ( node => {
 
       node.dependencies.forEach ( dependency => {
 
-        filePaths.delete ( dependency );
+        nodes[dependency].dependants.push ( node.filePath );
 
       });
 
     });
 
-    const roots = Array.from ( filePaths ).map ( path => nodes[path] );
+    const graph: Graph = { entryPath, rootPath, leaves: [], roots: [], nodes };
 
-    return roots;
+    graph.leaves = Helpers.getGraphLeaves ( graph );
+    graph.roots = Helpers.getGraphRoots ( graph );
 
-  }
+    return graph;
 
-};
+  },
 
-/* MAIN */
+  getGraphBundle: ( graph: Graph ): string => {
 
-const MiniPacco = {
-
-  /* API */
-
-  bundle: ( entryPath: string ): string => {
-
-    const graph = MiniPacco.resolve ( entryPath );
     const fileContents: string[] = [];
 
-    MiniPacco.traverse ( graph, ( _, child ) => {
+    Helpers.traverseGraphFromLeaves ( graph, node => {
 
-      fileContents.push ( child.fileContent );
+      fileContents.push ( node.fileContent );
 
     });
 
@@ -67,9 +118,8 @@ const MiniPacco = {
 
   },
 
-  graph: ( entryPath: string ): string => {
+  getGraphDot: ( graph: Graph ): string => {
 
-    const graph = MiniPacco.resolve ( entryPath );
     const lines: string[] = [];
 
     lines.push ( 'digraph {' );
@@ -77,7 +127,7 @@ const MiniPacco = {
     lines.push ( 'node [style="filled",color="gray89"]' );
     lines.push ( 'edge [color="gray43"]' );
 
-    MiniPacco.traverse ( graph, ( parent, child ) => {
+    Helpers.traverseGraphFromRoots ( graph, ( parent, child ) => {
 
       const label = path.relative ( graph.rootPath, child.filePath );
 
@@ -97,77 +147,157 @@ const MiniPacco = {
 
   },
 
-  resolve: ( entryPath: string ): Graph => {
+  getGraphLeaves: ( graph: Graph ): Node[] => {
 
-    const filePath = path.resolve ( entryPath );
-    const rootPath = path.dirname ( filePath );
-    const queue = [filePath];
-    const nodes: Graph['nodes'] = {};
+    const leaves = Object.values ( graph.nodes ).filter ( node => !node.dependencies.length );
 
-     while ( true ) {
-
-      const filePath = queue.shift ();
-
-      if ( !filePath ) break;
-
-      if ( nodes[filePath] ) continue;
-
-      const fileContent = fs.readFileSync ( filePath, 'utf8' );
-      const folderPath = path.dirname ( filePath );
-      const dependencies = Helpers.getDependencies ( rootPath, folderPath, fileContent );
-      const node: Node = { filePath, fileContent, dependencies };
-
-      nodes[filePath] = node;
-      queue.unshift ( ...dependencies );
-
-    }
-
-    const roots = Helpers.getRoots ( nodes );
-    const graph: Graph = { entryPath, rootPath, roots, nodes };
-
-    return graph;
+    return leaves;
 
   },
 
-  traverse: ( graph: Graph, callback: (( parent: Node | undefined, child: Node ) => void) ): void => {
+  getGraphRoots: ( graph: Graph ): Node[] => {
+
+    const filePaths = new Set ( Object.keys ( graph.nodes ) );
+
+    Object.values ( graph.nodes ).forEach ( node => {
+
+      node.dependencies.forEach ( dependency => {
+
+        filePaths.delete ( dependency );
+
+      });
+
+    });
+
+    const roots = Array.from ( filePaths ).map ( filePath => graph.nodes[filePath] );
+
+    return roots;
+
+  },
+
+  traverseGraphFromLeaves: ( graph: Graph, callback: ( node: Node ) => void ): void => {
+
+    // Calling the callback once per node, from leaves to roots
 
     const traversed = new Set<string> ();
 
-    const traverse = ( traversing: string[], parent: Node | undefined, child: Node ): void => {
+    const traverse = ( node: Node ): void => {
 
-      if ( traversing.includes ( child.filePath ) ) {
+      if ( traversed.has ( node.filePath ) ) return;
 
-        throw new Error ( `Circular dependencies detected: ${[...traversing, child.filePath].join ( ' -> ' )}` );
+      if ( !node.dependencies.every ( dependency => traversed.has ( dependency ) ) ) return;
 
-      }
+      callback ( node );
 
-      traversing = [...traversing, child.filePath];
+      traversed.add ( node.filePath );
 
-      if ( traversed.has ( child.filePath ) ) return;
+      node.dependants.forEach ( dependant => {
 
-      traversed.add ( child.filePath );
-
-      callback ( parent, child );
-
-      child.dependencies.forEach ( dependency => {
-
-        traverse ( traversing, child, graph.nodes[dependency] );
+        traverse ( graph.nodes[dependant] );
 
       });
 
     };
 
-    if ( !graph.roots.length ) {
+    graph.leaves.forEach ( leaf => {
 
-      throw new Error ( 'Circular dependencies detected, no root nodes found' );
+      traverse ( leaf );
+
+    });
+
+    if ( traversed.size !== Object.keys ( graph.nodes ).length ) {
+
+      console.log ( color.red ( 'Circular dependencies detected, leftover non-leaves nodes' ) );
+
+      process.exit ( 1 );
 
     }
 
-    graph.roots.forEach ( root => {
+  },
 
-      traverse ( [], undefined, root );
+  traverseGraphFromRoots: ( graph: Graph, callback: (( parent: Node | undefined, child: Node ) => void) ): void => {
 
-    });
+    // Calling the callback once per edge, from roots to leaves
+
+    const traversed = new Set<Node> ();
+
+    const traverse = ( traversing: Node[], parent: Node | undefined, child: Node ): void => {
+
+      if ( traversing.includes ( child ) ) {
+
+        const filePaths = [...traversing, child].map ( node => node.filePath );
+
+        console.log ( color.red ( `Circular dependencies detected: ${filePaths.join ( ' -> ' )}` ) );
+
+        process.exit ( 1 );
+
+      }
+
+      callback ( parent, child );
+
+      if ( !traversed.has ( child ) ) {
+
+        traversed.add ( child );
+
+        traversing = [...traversing, child];
+
+        child.dependencies.forEach ( dependency => {
+
+          traverse ( traversing, child, graph.nodes[dependency] );
+
+        });
+
+      }
+
+    };
+
+    if ( !graph.roots.length ) {
+
+      console.log ( color.red ( 'Circular dependencies detected, no root files found' ) );
+
+      process.exit ( 1 );
+
+    } else {
+
+      graph.roots.forEach ( root => {
+
+        traverse ( [], undefined, root );
+
+      });
+
+    }
+
+  }
+
+};
+
+/* MAIN */
+
+const MiniPacco = {
+
+  /* API */
+
+  bundle: ( entryPath: string ): string => {
+
+    const graph = Helpers.getGraph ( entryPath );
+
+    Helpers.checkCircularDependencies ( graph );
+
+    const bundle = Helpers.getGraphBundle ( graph );
+
+    return bundle;
+
+  },
+
+  graph: ( entryPath: string ): string => {
+
+    const graph = Helpers.getGraph ( entryPath );
+
+    Helpers.checkCircularDependencies ( graph );
+
+    const dot = Helpers.getGraphDot ( graph );
+
+    return dot;
 
   }
 
