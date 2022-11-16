@@ -1,0 +1,7 @@
+
+/* a.css */
+/* @require b.css */
+
+.a {
+  visibility: hidden;
+}

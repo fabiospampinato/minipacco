@@ -1,0 +1,32 @@
+{
+  "name": "minipacco",
+  "repository": "github:fabiospampinato/minipacco",
+  "description": "A little bundler for resolving dependencies graphs into a single concatenated file.",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": "dist/bin.js",
+  "scripts": {
+    "clean": "tsex clean",
+    "compile": "tsex compile",
+    "compile:watch": "tsex compile --watch",
+    "prepublishOnly": "npm run clean && npm run compile"
+  },
+  "keywords": [
+    "mini",
+    "pacco",
+    "bundle",
+    "concat",
+    "resolve",
+    "dependencies",
+    "graph",
+    "dot"
+  ],
+  "dependencies": {
+    "specialist": "^0.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "tsex": "^1.1.3",
+    "typescript": "^4.9.3"
+  }
+}
