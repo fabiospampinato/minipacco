@@ -138,7 +138,7 @@ const MiniPacco = {
 
       if ( traversing.includes ( child.filePath ) ) {
 
-        throw new Error ( `Circular dependencies detected: ${traversing.join ( ' -> ' )}` );
+        throw new Error ( `Circular dependencies detected: ${[...traversing, child.filePath].join ( ' -> ' )}` );
 
       }
 
