@@ -9,7 +9,7 @@
     "clean": "tsex clean",
     "compile": "tsex compile",
     "compile:watch": "tsex compile --watch",
-    "prepublishOnly": "npm run clean && npm run compile"
+    "prepublishOnly": "tsex prepare"
   },
   "keywords": [
     "mini",
@@ -22,11 +22,11 @@
     "dot"
   ],
   "dependencies": {
-    "specialist": "^0.6.1"
+    "specialist": "^1.1.0"
   },
   "devDependencies": {
-    "@types/node": "^18.11.9",
-    "tsex": "^1.1.3",
-    "typescript": "^4.9.3"
+    "@types/node": "^18.13.0",
+    "tsex": "^2.2.0",
+    "typescript": "^4.9.5"
   }
 }

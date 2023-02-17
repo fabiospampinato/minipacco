@@ -2,43 +2,25 @@
 
 /* IMPORT */
 
-import process from 'node:process';
-import {program, updater} from 'specialist';
+import {bin} from 'specialist';
 import MiniPacco from '.';
-
-/* HELPERS */
-
-const name = 'minipacco';
-const description = 'A little bundler for resolving dependencies graphs into a single concatenated file.';
-const version = '1.0.0';
 
 /* MAIN */
 
-updater ({ name, version });
-
-program
-  .name ( name )
-  .version ( version )
-  .description ( description );
-
-program
-  .command ( 'bundle' )
-  .description ( 'Bundle a project into a file' )
-  .arguments ( '<entryFile>' )
-  .action ( async entryPath => {
-    const bundle = await MiniPacco.bundle ( entryPath );
+bin ( 'minipacco', 'A little bundler for resolving dependencies graphs into a single concatenated file.' )
+  /* BUNDLE */
+  .command ( 'bundle', 'Bundle a project into a file' )
+  .argument ( '<entryFile>', 'The entrypoint file to start resolving dependencies from' )
+  .action ( ( options, entryPaths ) => {
+    const bundle = MiniPacco.bundle ( entryPaths[0] );
     console.log ( bundle );
-    process.exit ( 0 );
-  });
-
-program
-  .command ( 'graph' )
-  .description ( 'Graph a project into a dot chart' )
-  .arguments ( '<entryFile>' )
-  .action ( async entryPath => {
-    const graph = await MiniPacco.graph ( entryPath );
+  })
+  /* GRAPH */
+  .command ( 'graph', 'Graph a project into a dot chart' )
+  .argument ( '<entryFile>', 'The entrypoint file to start resolving dependencies from' )
+  .action ( ( options, entryPaths ) => {
+    const graph = MiniPacco.graph ( entryPaths[0] );
     console.log ( graph );
-    process.exit ( 0 );
-  });
-
-program.parse ();
+  })
+  /* RUN */
+  .run ();
