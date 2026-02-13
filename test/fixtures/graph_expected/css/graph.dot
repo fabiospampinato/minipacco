@@ -1,0 +1,10 @@
+digraph {
+nodesep=.5
+node [style="filled",color="gray89"]
+edge [color="gray43"]
+"/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/a.css" [color="indianred1", label="a.css"]
+"/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/b.css" [color="palegreen1", label="b.css"]
+"/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/a.css" -> "/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/b.css"
+"/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/c.css" [color="palegreen1", label="c.css"]
+"/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/b.css" -> "/Users/fabio/Code/fabiospampinato/minipacco/test/fixtures/source/css/c.css"
+}
