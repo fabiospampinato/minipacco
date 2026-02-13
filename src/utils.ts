@@ -3,7 +3,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
 import {color} from 'specialist';
 import type {Node, Graph} from './types';
 
@@ -36,7 +35,7 @@ const getFileContent = ( filePath: string ): string => {
 
     }
 
-    process.exit ( 1 );
+    throw new Error ( 'Failed to read file' );
 
   }
 
@@ -205,7 +204,7 @@ const traverseGraphFromLeaves = ( graph: Graph, callback: ( node: Node ) => void
 
     console.log ( color.red ( 'Circular dependencies detected, leftover non-leaves nodes' ) );
 
-    process.exit ( 1 );
+    throw new Error ( 'Outer circular dependency found' );
 
   }
 
@@ -225,7 +224,7 @@ const traverseGraphFromRoots = ( graph: Graph, callback: (( parent: Node | undef
 
       console.log ( color.red ( `Circular dependencies detected: ${filePaths.join ( ' -> ' )}` ) );
 
-      process.exit ( 1 );
+      throw new Error ( 'Inner circular dependency found' );
 
     }
 
@@ -251,7 +250,7 @@ const traverseGraphFromRoots = ( graph: Graph, callback: (( parent: Node | undef
 
     console.log ( color.red ( 'Circular dependencies detected, no root files found' ) );
 
-    process.exit ( 1 );
+    throw new Error ( 'Outer circular dependency found' );
 
   } else {
 
