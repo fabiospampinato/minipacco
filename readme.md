@@ -28,7 +28,7 @@ The utility of this is pretty niche, but for example this is used in [Cash](http
 
 A `bundle` command is provided for bundling, it just accepts an entry file and outputs the concatenated string.
 
-```
+```sh
 minipacco bundle src/index.js
 ```
 
@@ -36,7 +36,7 @@ minipacco bundle src/index.js
 
 A `graph` command is provided for outputting the [`dot`](https://dreampuf.github.io/GraphvizOnline)-encoded dependency graph.
 
-```
+```sh
 minipacco graph src/index.js
 ```
 
