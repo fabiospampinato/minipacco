@@ -69,9 +69,9 @@ const getGraph = ( entryPath: string ): Graph => {
 
     const fileContent = getFileContent ( filePath );
     const folderPath = path.dirname ( filePath );
-    const dependants: string[] = [];
+    const dependents: string[] = [];
     const dependencies = getFileDependencies ( rootPath, folderPath, fileContent );
-    const node: Node = { filePath, fileContent, dependants, dependencies };
+    const node: Node = { filePath, fileContent, dependents, dependencies };
 
     nodes[filePath] = node;
     queue.unshift ( ...dependencies );
@@ -82,7 +82,7 @@ const getGraph = ( entryPath: string ): Graph => {
 
     node.dependencies.forEach ( dependency => {
 
-      nodes[dependency].dependants.push ( node.filePath );
+      nodes[dependency].dependents.push ( node.filePath );
 
     });
 
@@ -186,9 +186,9 @@ const traverseGraphFromLeaves = ( graph: Graph, callback: ( node: Node ) => void
 
     traversed.add ( node.filePath );
 
-    node.dependants.forEach ( dependant => {
+    node.dependents.forEach ( dependent => {
 
-      traverse ( graph.nodes[dependant] );
+      traverse ( graph.nodes[dependent] );
 
     });
 

@@ -4,7 +4,7 @@
 type Node = {
   filePath: string,
   fileContent: string,
-  dependants: string[],
+  dependents: string[],
   dependencies: string[]
 };
 
